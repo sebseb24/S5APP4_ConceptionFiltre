@@ -1,5 +1,4 @@
 import math
-
 import matplotlib
 import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
@@ -7,21 +6,20 @@ import numpy
 import numpy as np
 from scipy import signal
 from Libraries.zplane import zplane
+import scipy.linalg as la
 
 
-# Appliquer l'inverse de la fonction de transfert a l'image
-# ** Appliquer le filtre selon les colonnes de l'image uniquement, donc considerez chaque colonne
-# comme un signal different pour appliquer le filtre successivement sur chacune des colonnes
-# Conversion en ton de gris
-# matplotlib.pyplot.gray()
-# img_color = matplotlib.image.imread('imagecouleur.png')
-# img = numpy.mean(img_color, -1)
-# Veuillez noter que pour lire une matrice dans le format de python .npy, il suffit de faire, p.ex.:
-# img_load = np.load("goldhill_aberrations.npy")
-def filtrageAberrations():
-    # Load image
-    img = np.load("Images/In/goldhill_aberrations.npy")
+def loadImage(filename):
+    img = np.load("Images/In/" + filename)
     
+    img_x = int(len(img[0]))
+    img_y = int(len(img))
+    imgFiltree = np.zeros((img_y, img_x))
+    
+    return img, imgFiltree
+
+
+def filtrageAberrations(img, imgFiltree):
     # fonction de transfert :
     b = np.poly([0.9 * np.exp(1j * np.pi / 2), 0.9 * np.exp(-1j * np.pi / 2), 0.95 * np.exp(1j * np.pi / 8),
                  0.95 * np.exp(-1j * np.pi / 8)])  # Zeros
@@ -35,26 +33,22 @@ def filtrageAberrations():
     # La fonction de transfert inverse est stable car tous les POLES sont a l'interieur du cercle, donc
     # possede un module < 1
     
-    img_x = int(len(img[0]))
-    img_y = int(len(img))
-    imgFiltree = np.zeros((img_y, img_x))
-    
     for i in range(0, len(img[0]) - 1):
         imgFiltree[i] = signal.lfilter(a, b, img[i])
     
     plt.figure()
+    plt.title("Image originale avec aberrations")
     plt.imshow(img)
     
     matplotlib.pyplot.gray()
     
     plt.figure()
+    plt.title("Image filtree par la fonction de transfert inverse")
     plt.imshow(imgFiltree)
     
-    plt.show()
+    return imgFiltree
 
 
-# Verifier si la fonction de transfert inverse est stable (plot poles et zeros ?)
-#
 # def rotationImage():
 # # Transformation lineaire de l'image (90 degree vers la droite)
 # # Appliquer une matrice de rotation pour identifier la nouvelle position de chacun des pixels
@@ -65,13 +59,7 @@ def filtrageAberrations():
 
 # *** fe = pixel/metre
 # Conception d'un filtre passe-bas RII par 2 methodes :
-def filtrageBruit(methode, type):
-    img = np.load("Images/In/goldhill_bruit.npy")
-    
-    img_x = int(len(img[0]))
-    img_y = int(len(img))
-    imgFiltree = np.zeros((img_y, img_x))
-    
+def filtrageBruit(img, imageFiltree, methode, type):
     fe = 1600
     
     # 1 : Appliquer la methode de transformation bilineaire pour obtenir les coefficients du filtre a partir de
@@ -120,51 +108,59 @@ def filtrageBruit(methode, type):
         print(N)
         
         for i in range(0, len(img[0]) - 1):
-            imgFiltree[i] = signal.lfilter(b, a, img[i])
+            imageFiltree[i] = signal.lfilter(b, a, img[i])
     
     matplotlib.pyplot.gray()
-    
+
     plt.figure()
+    plt.title("Image bruitee originale")
     plt.imshow(img)
-    
+
     plt.figure()
+    plt.title("Image filtree par le filtre passe-bas RII choisi")
     plt.imshow(imgFiltree)
     
-    plt.show()
+    return imgFiltree
 
 
-# def compressionImage():
-# # *** Principle Component Analysis (PCA), determiner une base orthogonale ou le premier element permet d'extraire le max d'informations,
-# # le 2ieme un peu moins et ainsi de suite. On pourra laisser tomber les elements de la base qui contiennent le moins d'info
-#
-# # 1: Calcul de la matrice de covariance de l'image
-# # *** Chaque colonne de l'image est un vecteur de N-dimension ou N est le nombre de pixels dans une colonne.
-# # Utiliser la fonction python numpy.cov()
-#
-# # 2: Determiner les vecteurs propres, qui forment une base de vecteurs independants
-#
-# # 3: Construire une matrice de passage pour exprimer l'image selon cette nouvelle base
-# # Les lignes de la matrice de passage permettant de passer de la base originale vers cette nouvelle base seront composées des vecteurs
-# # propres de la matrice de covariance, c’est-à-dire chaque ligne de la matrice de passage sera un vecteur propre différent
-#
-# # 4: Fixer a zero un certain nombre de lignes (respectivement 50% et 70% des lignes)
-#
-# # 5: Appliquer la matrice de passage inverse pour revenir a l'image originale (Voir note 8 du guide etudiant p.9 du pdf)
-# # (autre fonction maybe ?)
+def compressionImage(image):
+    # *** Principle Component Analysis (PCA), determiner une base orthogonale ou le premier element permet d'extraire le max d'informations,
+    # le 2ieme un peu moins et ainsi de suite. On pourra laisser tomber les elements de la base qui contiennent le moins d'info
+    
+    # 1: Calcul de la matrice de covariance de l'image
+    # *** Chaque colonne de l'image est un vecteur de N-dimension ou N est le nombre de pixels dans une colonne.
+    # Utiliser la fonction python numpy.cov()
+    imgCov = numpy.cov(image)
+    
+    # 2: Determiner les vecteurs propres, qui forment une base de vecteurs independants
+    eigvals, eigvecs = la.eig(imgCov)
+    
+    # 3: Construire une matrice de passage pour exprimer l'image selon cette nouvelle base
+    # Les lignes de la matrice de passage permettant de passer de la base originale vers cette nouvelle base seront composées des vecteurs
+    # propres de la matrice de covariance, c’est-à-dire chaque ligne de la matrice de passage sera un vecteur propre différent
+    
+    # 4: Fixer a zero un certain nombre de lignes (respectivement 50% et 70% des lignes)
+    
+    # 5: Appliquer la matrice de passage inverse pour revenir a l'image originale (Voir note 8 du guide etudiant p.9 du pdf)
+    # (autre fonction maybe ?)
 
 
 if __name__ == '__main__':
     # Filtrage des aberrations en appliquant un filtre numérique
-    # filtrageAberrations()
+    img, imgFiltree = loadImage("goldhill_aberrations.npy")
+    imgAberrationsFiltree = filtrageAberrations(img, imgFiltree)
     
     # # Rotation de l'image
     # rotationImage()
     
-    # Elimination du bruit en haute frequence
-    # type = Butterworth/Cheby1/Cheby2/Elliptique
-    filtrageBruit(2, type="Elliptique")
+    # # Elimination du bruit en haute frequence
+    # # choix du type de filtre = Butterworth/Cheby1/Cheby2/Elliptique
+    img, imgFiltree = loadImage("goldhill_bruit.npy")
+    imgBruitFiltree = filtrageBruit(img, imgFiltree, 2, type="Elliptique")
     
     # # Compression de l'image
-    # compressionImage()
+    compressionImage(imgFiltree)
+    
+    plt.show()
     
     exit(1)
