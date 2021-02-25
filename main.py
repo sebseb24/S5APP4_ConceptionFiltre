@@ -49,26 +49,27 @@ def filtrageAberrations(img, imgFiltree):
     return imgFiltree
 
 
-# def rotationImage():
-# # Transformation lineaire de l'image (90 degree vers la droite)
-# # Appliquer une matrice de rotation pour identifier la nouvelle position de chacun des pixels
-# # Egalement interprete comme un changement de base dans le plan qui constitue un espace vectoriel 2D
-# # *** L'origine de l'image est positionnee en haut de l'image a gauche plutot qu'en bas a gauche
-# # Il faut donc faire une correction avant de pouvoir appliquer la matrice de rotation qui suppose un systeme cartesion
-#
+def rotationImage(img, imgFiltree):
+    # Transformation lineaire de l'image (90 degree vers la droite)
+    # Appliquer une matrice de rotation pour identifier la nouvelle position de chacun des pixels
+    # Egalement interprete comme un changement de base dans le plan qui constitue un espace vectoriel 2D
+    # *** L'origine de l'image est positionnee en haut de l'image a gauche plutot qu'en bas a gauche
+    # Il faut donc faire une correction avant de pouvoir appliquer la matrice de rotation qui suppose un systeme cartesion
+    # TODO Implementer la fonction pour la rotation de l'image
+    X = 0
+
 
 # *** fe = pixel/metre
 # Conception d'un filtre passe-bas RII par 2 methodes :
 def filtrageBruit(img, imageFiltree, methode, type):
     fe = 1600
     
-    # 1 : Appliquer la methode de transformation bilineaire pour obtenir les coefficients du filtre a partir de
-    # la fct de transfert H(s) d'un filtre analogique connu
     # convertir un filtre analogique passe-bas Butterworth d'ordre 2 en un filtre numerique
     # Hs = 1 / (((s/wc)^2) + (math.sqrt(2) * (s/wc)) + 1)
     if methode == 1:
         fc = 500
-        # 2: Utiliser les fonctions de Python
+        # TODO Implementer la methode de transformation bilineaire pour obtenir les coefficients a partir de la fct
+        #  de transfert d'un filtre analogique connu
     
     if methode == 2:
         N = 0
@@ -105,17 +106,18 @@ def filtrageBruit(img, imageFiltree, methode, type):
         # Poles et zeroes
         # zplane(b, a)
         
-        print(N)
+        print("Type de filtre choisi : " + type)
+        print("Ordre du filtre : " + str(N))
         
         for i in range(0, len(img[0]) - 1):
             imageFiltree[i] = signal.lfilter(b, a, img[i])
     
     matplotlib.pyplot.gray()
-
+    
     plt.figure()
     plt.title("Image bruitee originale")
     plt.imshow(img)
-
+    
     plt.figure()
     plt.title("Image filtree par le filtre passe-bas RII choisi")
     plt.imshow(imgFiltree)
@@ -138,11 +140,14 @@ def compressionImage(image):
     # 3: Construire une matrice de passage pour exprimer l'image selon cette nouvelle base
     # Les lignes de la matrice de passage permettant de passer de la base originale vers cette nouvelle base seront composées des vecteurs
     # propres de la matrice de covariance, c’est-à-dire chaque ligne de la matrice de passage sera un vecteur propre différent
+    # TODO Construire la matrice de passage
     
     # 4: Fixer a zero un certain nombre de lignes (respectivement 50% et 70% des lignes)
+    # TODO Choisir quelles lignes fixer a 0
     
     # 5: Appliquer la matrice de passage inverse pour revenir a l'image originale (Voir note 8 du guide etudiant p.9 du pdf)
     # (autre fonction maybe ?)
+    # TODO Appliquer la matrice de passage inverse
 
 
 if __name__ == '__main__':
@@ -151,7 +156,8 @@ if __name__ == '__main__':
     imgAberrationsFiltree = filtrageAberrations(img, imgFiltree)
     
     # # Rotation de l'image
-    # rotationImage()
+    img = matplotlib.image.imread("Images/In/goldhill_rotate.png")
+    rotationImage(img, imgFiltree)
     
     # # Elimination du bruit en haute frequence
     # # choix du type de filtre = Butterworth/Cheby1/Cheby2/Elliptique
