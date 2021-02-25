@@ -2,7 +2,7 @@ import numpy as np
 from scipy import signal
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
-from zplane import *
+from Libraries.zplane import zplane
 
 
 
@@ -11,12 +11,14 @@ def P1():
     a = np.poly([0.95*np.exp(1j*np.pi/8),0.95*np.exp(-1j*np.pi/8)])
 
     #a
-    zplane(b,a)
+    zplane(b, a)
 
     #b filtre stable car pole sur 1
 
     #c
-    w, h = signal.freqz(b,a)
+    # w = La frequence a laquelle h a ete computed. par defaut, w est normalisee entre 0 et pi rad/ech
+    # h = La reponse en frequence du filtre en nombre complexe
+    w, h = signal.freqz(b, a)
 
     fig, ax1 = plt.subplots()
     ax1.set_title('Digital filter frequency response')
@@ -36,7 +38,9 @@ def P1():
     #d
     tabZero = np.zeros(501)
     tabZero[251] = 1
+    # Filtrage de l'impulsion avec le filtre pour obtenir h[n] (reponse impulsionnelle?)
     signalHn = signal.lfilter(b,a, tabZero)
+    # Calcul de la FFT
     signalfft = np.fft.fft(signalHn)
 
     plt.figure()
@@ -46,6 +50,7 @@ def P1():
     plt.plot(20*np.log10(abs(signalfft))[:250])
 
     #e
+    # Filtre avec le filtre inverse (numerateur et denom inverse)
     sinalHnInv = signal.lfilter(a,b,signalHn)
     plt.figure()
     plt.plot(sinalHnInv)
@@ -58,6 +63,7 @@ def P2():
 
     zplane(b, a)
 
+    # Reponse en frequence
     w, h = signal.freqz(b, a)
 
     fig, ax1 = plt.subplots()
@@ -131,5 +137,5 @@ def P4():
     plt.show()
 
 if __name__ == '__main__':
-    P4()
+    P1()
     exit(1)
