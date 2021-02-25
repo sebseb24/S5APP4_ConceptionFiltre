@@ -8,6 +8,7 @@ import numpy as np
 from scipy import signal
 from Libraries.zplane import zplane
 
+
 # Appliquer l'inverse de la fonction de transfert a l'image
 # ** Appliquer le filtre selon les colonnes de l'image uniquement, donc considerez chaque colonne
 # comme un signal different pour appliquer le filtre successivement sur chacune des colonnes
@@ -19,12 +20,13 @@ from Libraries.zplane import zplane
 # img_load = np.load("goldhill_aberrations.npy")
 def filtrageAberrations():
     # Load image
-    img = np.load("Images/goldhill_aberrations.npy")
-
+    img = np.load("Images/In/goldhill_aberrations.npy")
+    
     # fonction de transfert :
-    b = np.poly([0.9*np.exp(1j*np.pi/2), 0.9*np.exp(-1j*np.pi/2), 0.95*np.exp(1j*np.pi/8), 0.95*np.exp(-1j*np.pi/8)]) # Zeros
-    a = np.poly([0, -0.99, -0.99, 0.88]) # Poles
-
+    b = np.poly([0.9 * np.exp(1j * np.pi / 2), 0.9 * np.exp(-1j * np.pi / 2), 0.95 * np.exp(1j * np.pi / 8),
+                 0.95 * np.exp(-1j * np.pi / 8)])  # Zeros
+    a = np.poly([0, -0.99, -0.99, 0.88])  # Poles
+    
     # Poles et zeros
     # zplane(b, a)
     
@@ -32,23 +34,24 @@ def filtrageAberrations():
     # zplane(a, b)
     # La fonction de transfert inverse est stable car tous les POLES sont a l'interieur du cercle, donc
     # possede un module < 1
-
+    
     img_x = int(len(img[0]))
     img_y = int(len(img))
     imgFiltree = np.zeros((img_y, img_x))
     
-    for i in range(0, len(img[0])-1):
+    for i in range(0, len(img[0]) - 1):
         imgFiltree[i] = signal.lfilter(a, b, img[i])
-
+    
     plt.figure()
     plt.imshow(img)
-
+    
     matplotlib.pyplot.gray()
-
+    
     plt.figure()
     plt.imshow(imgFiltree)
-
+    
     plt.show()
+
 
 # Verifier si la fonction de transfert inverse est stable (plot poles et zeros ?)
 #
@@ -59,23 +62,77 @@ def filtrageAberrations():
 # # *** L'origine de l'image est positionnee en haut de l'image a gauche plutot qu'en bas a gauche
 # # Il faut donc faire une correction avant de pouvoir appliquer la matrice de rotation qui suppose un systeme cartesion
 #
-# def filtrageBruit():
-#     # *** fe = pixel/metre
-#     # Conception d'un filtre passe-bas RII par 2 methodes :
-#     # 1 : Appliquer la methode de transformation bilineaire pour obtenir les coefficients du filtre a partir de
-#     # la fct de transfert H(s) d'un filtre analogique connu
-#     # convertir un filtre analogique passe-bas Butterworth d'ordre 2 en un filtre numerique
-#     # Hs = 1 / (((s/wc)^2) + (math.sqrt(2) * (s/wc)) + 1)
-#     fc = 500
-#     fe = 1600
-#
-# # 2: Utiliser les fonctions de Python
-# # Il faut respecter les tolerances suivantes :
-# # gain de 0dB +- 0.2dB sur la majeure partie de la bande passante 0 a 500 Hz
-# # gain doit etre au moins -60dB pour les frequences plus elevees que 750 Hz
-# # Choisir le type de filtre ayant le plus petit ordre possible (Butterworth, Chebyshev type I, Chebyshev type II, elliptique)
-#
-#
+
+# *** fe = pixel/metre
+# Conception d'un filtre passe-bas RII par 2 methodes :
+def filtrageBruit(methode, type):
+    img = np.load("Images/In/goldhill_bruit.npy")
+    
+    img_x = int(len(img[0]))
+    img_y = int(len(img))
+    imgFiltree = np.zeros((img_y, img_x))
+    
+    fe = 1600
+    
+    # 1 : Appliquer la methode de transformation bilineaire pour obtenir les coefficients du filtre a partir de
+    # la fct de transfert H(s) d'un filtre analogique connu
+    # convertir un filtre analogique passe-bas Butterworth d'ordre 2 en un filtre numerique
+    # Hs = 1 / (((s/wc)^2) + (math.sqrt(2) * (s/wc)) + 1)
+    if methode == 1:
+        fc = 500
+        # 2: Utiliser les fonctions de Python
+    
+    if methode == 2:
+        N = 0
+        a = 0
+        b = 0
+        
+        if type == "Butterworth":
+            # Filtre Butterworth (N=5)
+            # wp=Passband, ws=Stopband, gpass=max loss in passband (dB), gstop=min attenuation in stopband (dB)
+            N, Wn = signal.buttord(500, 750, 0.2, 60, fs=fe)
+            b, a = signal.butter(N, Wn, 'lowpass', False, output='ba', fs=fe)
+        
+        if type == "Cheby1":
+            # Filtre Chebyshev type I (N=4)
+            # wp=Passband, ws=Stopband, gpass=max loss in passband (dB), gstop=min attenuation in stopband (dB)
+            N, Wn = signal.cheb1ord(500, 750, 0.2, 60, fs=fe)
+            # N=Order, rp=max ripple below unity gain in passband (dB), Wn, btype=type
+            b, a = signal.cheby1(N, 1, Wn, 'lowpass', False, output='ba', fs=fe)
+        
+        if type == "Cheby2":
+            # Filtre Chebyshev type II (N=4)
+            # wp=Passband, ws=Stopband, gpass=max loss in passband (dB), gstop=min attenuation in stopband (dB)
+            N, Wn = signal.cheb2ord(500, 750, 0.2, 60, fs=fe)
+            # N=Order, rs=min att required in stopband (dB), Wn, btype=type
+            b, a = signal.cheby2(N, 60, Wn, output='ba', fs=fe)
+        
+        if type == "Elliptique":
+            # Filtre elliptique (N=3)
+            # wp=Passband, ws=Stopband, gpass=max loss in passband (dB), gstop=min attenuation in stopband (dB)
+            N, Wn = signal.ellipord(500, 750, 0.2, 60, fs=fe)
+            # N=Order, rp=max ripple below unity gain in passband (dB), rs=min att required in stopband (dB), Wn, btype=type
+            b, a = signal.ellip(N, 1, 60, Wn, output='ba', fs=fe)
+        
+        # Poles et zeroes
+        # zplane(b, a)
+        
+        print(N)
+        
+        for i in range(0, len(img[0]) - 1):
+            imgFiltree[i] = signal.lfilter(b, a, img[i])
+    
+    matplotlib.pyplot.gray()
+    
+    plt.figure()
+    plt.imshow(img)
+    
+    plt.figure()
+    plt.imshow(imgFiltree)
+    
+    plt.show()
+
+
 # def compressionImage():
 # # *** Principle Component Analysis (PCA), determiner une base orthogonale ou le premier element permet d'extraire le max d'informations,
 # # le 2ieme un peu moins et ainsi de suite. On pourra laisser tomber les elements de la base qui contiennent le moins d'info
@@ -98,15 +155,16 @@ def filtrageAberrations():
 
 if __name__ == '__main__':
     # Filtrage des aberrations en appliquant un filtre numérique
-    filtrageAberrations()
-
+    # filtrageAberrations()
+    
     # # Rotation de l'image
     # rotationImage()
-    #
-    # # Elimination du bruit en haute frequence
-    # filtrageBruit()
-    #
+    
+    # Elimination du bruit en haute frequence
+    # type = Butterworth/Cheby1/Cheby2/Elliptique
+    filtrageBruit(2, type="Elliptique")
+    
     # # Compression de l'image
     # compressionImage()
-
+    
     exit(1)

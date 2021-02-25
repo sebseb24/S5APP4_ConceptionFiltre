@@ -137,5 +137,5 @@ def P4():
     plt.show()
 
 if __name__ == '__main__':
-    P1()
+    P3()
     exit(1)
