@@ -96,17 +96,10 @@ def filtrageBruit(img, methode, type):
     # convertir un filtre analogique passe-bas Butterworth d'ordre 2 en un filtre numerique
     # Hs = 1 / (((s/wc)^2) + (math.sqrt(2) * (s/wc)) + 1)
     if methode == 1:
-        fc = 500
-        # TODO Implementer la methode de transformation bilineaire pour obtenir les coefficients a partir de la fct
-        #  de transfert d'un filtre analogique connu
-        
-        # fonction de transfert :
-        b = np.poly([0, 0.9308, 0.4654])  # Zeros
-        a = np.poly([0, 0.7446, 0.1169])  # Poles
 
         # fonction de transfert :
-        b = np.poly([0.4654, 0.4654])  # Zeros
-        a = np.poly([0.519634, 0.224966])  # Poles
+        b = np.poly([-1, -1])  # Zeros
+        a = np.poly([-0.519634, 0.224966])  # Poles
 
         # Poles et zeros
         # zplane(b, a)
@@ -117,7 +110,7 @@ def filtrageBruit(img, methode, type):
         # possede un module < 1
         
         for i in range(0, len(img[0]) - 1):
-            imageFiltree[i] = signal.lfilter(a, b, img[i])
+            imageFiltree[i] = signal.lfilter(b, a, img[i])
     
     if methode == 2:
         N = 0
