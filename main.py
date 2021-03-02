@@ -10,16 +10,14 @@ import scipy.linalg as la
 
 
 def loadImage(filename):
-    img = np.load("Images/In/" + filename)
-    
+    return np.load("Images/In/" + filename)
+
+
+def filtrageAberrations(img):
     img_x = int(len(img[0]))
     img_y = int(len(img))
     imgFiltree = np.zeros((img_y, img_x))
     
-    return img, imgFiltree
-
-
-def filtrageAberrations(img, imgFiltree):
     # fonction de transfert :
     b = np.poly([0.9 * np.exp(1j * np.pi / 2), 0.9 * np.exp(-1j * np.pi / 2), 0.95 * np.exp(1j * np.pi / 8),
                  0.95 * np.exp(-1j * np.pi / 8)])  # Zeros
@@ -49,19 +47,49 @@ def filtrageAberrations(img, imgFiltree):
     return imgFiltree
 
 
-def rotationImage(img, imgFiltree):
-    # Transformation lineaire de l'image (90 degree vers la droite)
-    # Appliquer une matrice de rotation pour identifier la nouvelle position de chacun des pixels
-    # Egalement interprete comme un changement de base dans le plan qui constitue un espace vectoriel 2D
-    # *** L'origine de l'image est positionnee en haut de l'image a gauche plutot qu'en bas a gauche
-    # Il faut donc faire une correction avant de pouvoir appliquer la matrice de rotation qui suppose un systeme cartesion
-    # TODO Implementer la fonction pour la rotation de l'image
-    X = 0
+def rotationImage(img, type="npy"):
+    img_x = int(len(img[0]))
+    img_y = int(len(img))
+    
+    if type == "png":
+        imageFiltree = np.zeros((img_y, img_x, 4))
+    
+    else:
+        imageFiltree = np.zeros((img_y, img_x))
+    
+    theta = np.radians(-90)
+    matriceRotation = np.array(((np.cos(theta), -np.sin(theta)),
+                                (np.sin(theta), np.cos(theta))))
+    
+    for x in range(0, len(img[0]) - 1):
+        for y in range(0, len(img[0]) - 1):
+            v = np.array((x, y))
+            new_v = matriceRotation.dot(v)
+            new_v[1] += (img_x - 1)
+            
+            nx = int(new_v[0])
+            ny = int(new_v[1])
+
+            imageFiltree[nx][ny] = img[x][y]
+
+    plt.figure()
+    plt.title("Image de coté")
+    plt.imshow(img)
+
+    plt.figure()
+    plt.title("Image après matrice de rotation")
+    plt.imshow(imageFiltree)
+    
+    return imageFiltree
 
 
 # *** fe = pixel/metre
 # Conception d'un filtre passe-bas RII par 2 methodes :
-def filtrageBruit(img, imageFiltree, methode, type):
+def filtrageBruit(img, methode, type):
+    img_x = int(len(img[0]))
+    img_y = int(len(img))
+    imageFiltree = np.zeros((img_y, img_x))
+
     fe = 1600
     
     # convertir un filtre analogique passe-bas Butterworth d'ordre 2 en un filtre numerique
@@ -120,9 +148,9 @@ def filtrageBruit(img, imageFiltree, methode, type):
     
     plt.figure()
     plt.title("Image filtree par le filtre passe-bas RII choisi")
-    plt.imshow(imgFiltree)
+    plt.imshow(imageFiltree)
     
-    return imgFiltree
+    return imageFiltree
 
 
 def compressionImage(image):
@@ -151,21 +179,41 @@ def compressionImage(image):
 
 
 if __name__ == '__main__':
-    # Filtrage des aberrations en appliquant un filtre numérique
-    img, imgFiltree = loadImage("goldhill_aberrations.npy")
-    imgAberrationsFiltree = filtrageAberrations(img, imgFiltree)
+    # imageFinale = []
     
-    # # Rotation de l'image
-    img = matplotlib.image.imread("Images/In/goldhill_rotate.png")
-    rotationImage(img, imgFiltree)
+    # Choix entre mode image complete ou images separees
+    image_complete = True
     
-    # # Elimination du bruit en haute frequence
-    # # choix du type de filtre = Butterworth/Cheby1/Cheby2/Elliptique
-    img, imgFiltree = loadImage("goldhill_bruit.npy")
-    imgBruitFiltree = filtrageBruit(img, imgFiltree, 2, type="Elliptique")
+    if image_complete:
+        img = loadImage("image_complete.npy")
+
+        # Filtrage des aberrations en appliquant un filtre numérique
+        imgAberrationsFiltree = filtrageAberrations(img)
+
+        # # Rotation de l'image
+        imgTournee = rotationImage(imgAberrationsFiltree, "npy")
+
+        # # Elimination du bruit en haute frequence
+        # # choix du type de filtre = Butterworth/Cheby1/Cheby2/Elliptique
+        imageFinale = filtrageBruit(imgTournee, 2, type="Elliptique")
+        
+    else:
+        # Filtrage des aberrations en appliquant un filtre numérique
+        img = loadImage("goldhill_aberrations.npy")
+        imgAberrationsFiltree = filtrageAberrations(img)
+    
+        # # Rotation de l'image
+        img = matplotlib.image.imread("Images/In/goldhill_rotate.png")
+        imgTournee = rotationImage(img, "png")
+    
+        # # Elimination du bruit en haute frequence
+        # # choix du type de filtre = Butterworth/Cheby1/Cheby2/Elliptique
+        img = loadImage("goldhill_bruit.npy")
+        imgBruitFiltree = filtrageBruit(img, 2, type="Elliptique")
+    
     
     # # Compression de l'image
-    compressionImage(imgFiltree)
+    # compressionImage(imageFinale)
     
     plt.show()
     
