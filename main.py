@@ -103,7 +103,11 @@ def filtrageBruit(img, methode, type):
         # fonction de transfert :
         b = np.poly([0, 0.9308, 0.4654])  # Zeros
         a = np.poly([0, 0.7446, 0.1169])  # Poles
-        
+
+        # fonction de transfert :
+        b = np.poly([0.4654, 0.4654])  # Zeros
+        a = np.poly([0.519634, 0.224966])  # Poles
+
         # Poles et zeros
         # zplane(b, a)
         
