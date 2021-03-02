@@ -7,6 +7,7 @@ import numpy as np
 from scipy import signal
 from Libraries.zplane import zplane
 import scipy.linalg as la
+import statistics
 
 
 def loadImage(filename):
@@ -69,13 +70,13 @@ def rotationImage(img, type="npy"):
             
             nx = int(new_v[0])
             ny = int(new_v[1])
-
+            
             imageFiltree[nx][ny] = img[x][y]
-
+    
     plt.figure()
     plt.title("Image de coté")
     plt.imshow(img)
-
+    
     plt.figure()
     plt.title("Image après matrice de rotation")
     plt.imshow(imageFiltree)
@@ -89,7 +90,7 @@ def filtrageBruit(img, methode, type):
     img_x = int(len(img[0]))
     img_y = int(len(img))
     imageFiltree = np.zeros((img_y, img_x))
-
+    
     fe = 1600
     
     # convertir un filtre analogique passe-bas Butterworth d'ordre 2 en un filtre numerique
@@ -98,23 +99,21 @@ def filtrageBruit(img, methode, type):
         fc = 500
         # TODO Implementer la methode de transformation bilineaire pour obtenir les coefficients a partir de la fct
         #  de transfert d'un filtre analogique connu
-
+        
         # fonction de transfert :
         b = np.poly([0, 0.9308, 0.4654])  # Zeros
         a = np.poly([0, 0.7446, 0.1169])  # Poles
-
+        
         # Poles et zeros
         # zplane(b, a)
-
+        
         # Poles et zeros de la fonction de transfert inverse
         # zplane(a, b)
         # La fonction de transfert inverse est stable car tous les POLES sont a l'interieur du cercle, donc
         # possede un module < 1
-
+        
         for i in range(0, len(img[0]) - 1):
             imageFiltree[i] = signal.lfilter(a, b, img[i])
-
-
     
     if methode == 2:
         N = 0
@@ -170,17 +169,59 @@ def filtrageBruit(img, methode, type):
     return imageFiltree
 
 
-def compressionImage(image):
+def compressionImage(img):
     # *** Principle Component Analysis (PCA), determiner une base orthogonale ou le premier element permet d'extraire le max d'informations,
     # le 2ieme un peu moins et ainsi de suite. On pourra laisser tomber les elements de la base qui contiennent le moins d'info
+
+    efficiency = 0.70
+
+    img_x = int(len(img[0]))
+    img_y = int(len(img))
+    meanMatrix = np.zeros((img_y, img_x))
+    
+    for i in range(len(img)):
+        mean = statistics.mean(img[i])
+        meanMatrix[i] = img[i] - mean
+
+    # imgCov = numpy.cov(np.transpose(meanMatrix))
+    imgCov = np.cov(img)
+    
+    eigvals, eigvecs = la.eig(imgCov)
+
+    length = int((len(eigvals)*efficiency))
+    eigvals.sort()
+
+    eigList = eigvals[length:]
+
+    matricePassage = np.zeros((img_y, img_x))
+    for i in range(len(eigvecs)):
+        eigval = eigvals[i]
+        for j in range(len(eigList)):
+            if eigList[j] == eigval:
+                # matricePassage[i] = eigvecs[j]
+                matricePassage[i] = img[j]
+                break
+    
+    imageCompressee = img * matricePassage
+
+    plt.figure()
+    plt.title("Image compressée")
+    plt.imshow(matricePassage)
+    
+    # imageDecompressee = imageCompressee * (np.linalg.inv(matricePassage))
+    imageDecompressee = imageCompressee * (np.transpose(matricePassage))
+
+    plt.figure()
+    plt.title("Image decompressée")
+    plt.imshow(imageDecompressee)
     
     # 1: Calcul de la matrice de covariance de l'image
     # *** Chaque colonne de l'image est un vecteur de N-dimension ou N est le nombre de pixels dans une colonne.
     # Utiliser la fonction python numpy.cov()
-    imgCov = numpy.cov(image)
+    # imgCov = numpy.cov(img)
     
     # 2: Determiner les vecteurs propres, qui forment une base de vecteurs independants
-    eigvals, eigvecs = la.eig(imgCov)
+    # eigvals, eigvecs = la.eig(imgCov)
     
     # 3: Construire une matrice de passage pour exprimer l'image selon cette nouvelle base
     # Les lignes de la matrice de passage permettant de passer de la base originale vers cette nouvelle base seront composées des vecteurs
@@ -196,41 +237,38 @@ def compressionImage(image):
 
 
 if __name__ == '__main__':
-    # imageFinale = []
-    
     # Choix entre mode image complete ou images separees
     image_complete = True
     
     if image_complete:
         img = loadImage("image_complete.npy")
-
+        
         # Filtrage des aberrations en appliquant un filtre numérique
         imgAberrationsFiltree = filtrageAberrations(img)
-
+        
         # # Rotation de l'image
         imgTournee = rotationImage(imgAberrationsFiltree, "npy")
-
+        
         # # Elimination du bruit en haute frequence
         # # choix du type de filtre = Butterworth/Cheby1/Cheby2/Elliptique
-        imageFinale = filtrageBruit(imgTournee, 1, type="Butterworth")
-        
+        imageFinale = filtrageBruit(imgTournee, 2, type="Elliptique")
+    
     else:
         # Filtrage des aberrations en appliquant un filtre numérique
         img = loadImage("goldhill_aberrations.npy")
         imgAberrationsFiltree = filtrageAberrations(img)
-    
+        
         # # Rotation de l'image
         img = matplotlib.image.imread("Images/In/goldhill_rotate.png")
         imgTournee = rotationImage(img, "png")
-    
+        
         # # Elimination du bruit en haute frequence
         # # choix du type de filtre = Butterworth/Cheby1/Cheby2/Elliptique
         img = loadImage("goldhill_bruit.npy")
-        imgBruitFiltree = filtrageBruit(img, 2, type="Elliptique")
+        imageFinale = filtrageBruit(img, 2, type="Elliptique")
     
-    
-    # # Compression de l'image
-    # compressionImage(imageFinale)
+    # Compression de l'image
+    compressionImage(imageFinale)
     
     plt.show()
     
