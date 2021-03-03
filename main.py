@@ -9,7 +9,6 @@ from Libraries.zplane import zplane
 import scipy.linalg as la
 import statistics
 
-
 def loadImage(filename):
     return np.load("Images/In/" + filename)
 
@@ -165,52 +164,73 @@ def filtrageBruit(img, methode, type):
     
     return imageFiltree
 
-
 def compressionImage(img):
     # *** Principle Component Analysis (PCA), determiner une base orthogonale ou le premier element permet d'extraire le max d'informations,
     # le 2ieme un peu moins et ainsi de suite. On pourra laisser tomber les elements de la base qui contiennent le moins d'info
 
-    efficiency = 0.70
+    matCov = np.cov(img)
 
-    img_x = int(len(img[0]))
-    img_y = int(len(img))
-    meanMatrix = np.zeros((img_y, img_x))
-    
-    for i in range(len(img)):
-        mean = statistics.mean(img[i])
-        meanMatrix[i] = img[i] - mean
+    eigvals, eigvecs = la.eig(matCov)
 
-    # imgCov = numpy.cov(np.transpose(meanMatrix))
-    imgCov = np.cov(img)
-    
-    eigvals, eigvecs = la.eig(imgCov)
+    img_Vec = np.matmul(img, eigvecs)
+    img_Vec_Inv = la.inv(eigvecs)
 
-    length = int((len(eigvals)*efficiency))
-    eigvals.sort()
+    compressValue = 2 # Mette la variable a 2 pour compression de 50 ou 3 pour compression de 70
 
-    eigList = eigvals[length:]
+    for i in range(0, len(img_Vec)):
+        rep = i % compressValue
+        if rep == 0:
+            img_Vec[i] = 0
 
-    matricePassage = np.zeros((img_y, img_x))
-    for i in range(len(eigvecs)):
-        eigval = eigvals[i]
-        for j in range(len(eigList)):
-            if eigList[j] == eigval:
-                # matricePassage[i] = eigvecs[j]
-                matricePassage[i] = img[j]
-                break
-    
-    imageCompressee = img * matricePassage
+    img_comp = np.matmul(img_Vec, img_Vec_Inv)
+
+    if compressValue == 2:
+        compressPercentage = 50
+    else:
+        compressPercentage = 70
 
     plt.figure()
-    plt.title("Image compressée")
-    plt.imshow(matricePassage)
-    
-    # imageDecompressee = imageCompressee * (np.linalg.inv(matricePassage))
-    imageDecompressee = imageCompressee * (np.transpose(matricePassage))
+    plt.gray()
+    plt.imshow(img_comp)
+    plt.title('Image compressée à %i pourcent' % compressPercentage)
 
-    plt.figure()
-    plt.title("Image decompressée")
-    plt.imshow(imageDecompressee)
+    # efficiency = 0.70
+    #
+    # img_x = int(len(img[0]))
+    # img_y = int(len(img))
+    #
+    # imgCov = np.cov(img)
+    #
+    # a = np.mean(imgCov)
+    #
+    # eigvals, eigvecs = la.eig(imgCov)
+    #
+    # length = int((len(eigvals)*efficiency))
+    # eigvals.sort()
+    #
+    # eigList = eigvals[length:]
+    #
+    # matricePassage = np.zeros((img_y, img_x))
+    # for i in range(len(eigvecs)):
+    #     eigval = eigvals[i]
+    #     for j in range(len(eigList)):
+    #         if eigList[j] == eigval:
+    #             # matricePassage[i] = eigvecs[j]
+    #             matricePassage[i] = img[j]
+    #             break
+    #
+    # imageCompressee = np.dot(imgCov, matricePassage)
+    #
+    # plt.figure()
+    # plt.title("Image compressée")
+    # plt.imshow(imageCompressee)
+    #
+    # # imageDecompressee = imageCompressee * (np.linalg.inv(matricePassage))
+    # imageDecompressee = np.dot(imageCompressee, (np.linalg.pinv(matricePassage)))
+    #
+    # plt.figure()
+    # plt.title("Image decompressée")
+    # plt.imshow(imageDecompressee)
     
     # 1: Calcul de la matrice de covariance de l'image
     # *** Chaque colonne de l'image est un vecteur de N-dimension ou N est le nombre de pixels dans une colonne.
