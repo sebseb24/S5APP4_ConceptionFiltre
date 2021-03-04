@@ -164,93 +164,37 @@ def filtrageBruit(img, methode, type):
     
     return imageFiltree
 
-def compressionImage(img):
+def compressionImage(img, compressValue):
     # *** Principle Component Analysis (PCA), determiner une base orthogonale ou le premier element permet d'extraire le max d'informations,
     # le 2ieme un peu moins et ainsi de suite. On pourra laisser tomber les elements de la base qui contiennent le moins d'info
 
-    matCov = np.cov(img)
+    matCov = np.cov(img) #matrice covariance image original
 
-    eigvals, eigvecs = la.eig(matCov)
+    eigvals, eigvecs = la.eig(matCov) #valeur propres et vecteurs propres de la matrice covariance
 
-    img_Vec = np.matmul(img, eigvecs)
-    img_Vec_Inv = la.inv(eigvecs)
+    img_Vec = np.matmul(img, eigvecs) #image de base vecteur propres, obtenu par la multiplication des vecteurs propres et de l'image de base original
+    eigvecs_inv = la.inv(eigvecs) #calcule vecteur propres inverse
 
-    compressValue = 2 # Mette la variable a 2 pour compression de 50 ou 3 pour compression de 70
-
+    # boucle qui vérifier le modulo 2 pour la compression a 50% qui en résulte d'une élimination d'une ligne sur 2
     for i in range(0, len(img_Vec)):
-        rep = i % compressValue
+        rep = i % 2
         if rep == 0:
             img_Vec[i] = 0
+    # boucle qui permet d'enlever une image sur 5 (selon modulo 5) ajouté au traitement du modulo 2, permet de passez de 50 a 70 % de compression [(1/2) + (1/5) = 0.70]
+    if compressValue == 70:
+        for i in range(0, len(img_Vec)):
+            rep = i % 5
+            if rep == 0:
+                img_Vec[i] = 0
 
-    img_comp = np.matmul(img_Vec, img_Vec_Inv)
 
-    if compressValue == 2:
-        compressPercentage = 50
-    else:
-        compressPercentage = 70
+    img_Comp = np.matmul(img_Vec, eigvecs_inv) #retour de l'image en base original le traitement
 
+    #affichage de l'image compressé
     plt.figure()
     plt.gray()
-    plt.imshow(img_comp)
-    plt.title('Image compressée à %i pourcent' % compressPercentage)
-
-    # efficiency = 0.70
-    #
-    # img_x = int(len(img[0]))
-    # img_y = int(len(img))
-    #
-    # imgCov = np.cov(img)
-    #
-    # a = np.mean(imgCov)
-    #
-    # eigvals, eigvecs = la.eig(imgCov)
-    #
-    # length = int((len(eigvals)*efficiency))
-    # eigvals.sort()
-    #
-    # eigList = eigvals[length:]
-    #
-    # matricePassage = np.zeros((img_y, img_x))
-    # for i in range(len(eigvecs)):
-    #     eigval = eigvals[i]
-    #     for j in range(len(eigList)):
-    #         if eigList[j] == eigval:
-    #             # matricePassage[i] = eigvecs[j]
-    #             matricePassage[i] = img[j]
-    #             break
-    #
-    # imageCompressee = np.dot(imgCov, matricePassage)
-    #
-    # plt.figure()
-    # plt.title("Image compressée")
-    # plt.imshow(imageCompressee)
-    #
-    # # imageDecompressee = imageCompressee * (np.linalg.inv(matricePassage))
-    # imageDecompressee = np.dot(imageCompressee, (np.linalg.pinv(matricePassage)))
-    #
-    # plt.figure()
-    # plt.title("Image decompressée")
-    # plt.imshow(imageDecompressee)
-    
-    # 1: Calcul de la matrice de covariance de l'image
-    # *** Chaque colonne de l'image est un vecteur de N-dimension ou N est le nombre de pixels dans une colonne.
-    # Utiliser la fonction python numpy.cov()
-    # imgCov = numpy.cov(img)
-    
-    # 2: Determiner les vecteurs propres, qui forment une base de vecteurs independants
-    # eigvals, eigvecs = la.eig(imgCov)
-    
-    # 3: Construire une matrice de passage pour exprimer l'image selon cette nouvelle base
-    # Les lignes de la matrice de passage permettant de passer de la base originale vers cette nouvelle base seront composées des vecteurs
-    # propres de la matrice de covariance, c’est-à-dire chaque ligne de la matrice de passage sera un vecteur propre différent
-    # TODO Construire la matrice de passage
-    
-    # 4: Fixer a zero un certain nombre de lignes (respectivement 50% et 70% des lignes)
-    # TODO Choisir quelles lignes fixer a 0
-    
-    # 5: Appliquer la matrice de passage inverse pour revenir a l'image originale (Voir note 8 du guide etudiant p.9 du pdf)
-    # (autre fonction maybe ?)
-    # TODO Appliquer la matrice de passage inverse
+    plt.imshow(img_Comp)
+    plt.title('Image compressée à %i pourcent' % compressValue)
 
 
 if __name__ == '__main__':
@@ -285,7 +229,8 @@ if __name__ == '__main__':
         imageFinale = filtrageBruit(img, 2, type="Elliptique")
     
     # Compression de l'image
-    compressionImage(imageFinale)
+    # mettre 50 pour une compression de 50% ou 70 pour une compression de 70%
+    compressionImage(imageFinale, 70)
     
     plt.show()
     
