@@ -96,7 +96,7 @@ def filtrageBruit(img, methode, type):
     # Approche par transformation bilinéaire
     if methode == 1:
         # fonction de transfert :
-        b = np.poly([-0.9, -0.9])  # Zeros
+        b = np.poly([-1, -1])  # Zeros
         a = np.poly([-0.2316 - 0.3957j, -0.2316 + 0.3957j])  # Poles
 
         if show_zplane:
