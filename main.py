@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import numpy
 import numpy as np
 from scipy import signal
-from Libraries.zplane import zplane
+from Libraries.zplane import *
 import scipy.linalg as la
 import statistics
 
@@ -31,10 +31,12 @@ def filtrageAberrations(img):
     a = np.poly([0, -0.99, -0.99, 0.88])  # Poles
 
     # Poles et zeros
+    # plt.figure()
     # zplane(b, a)
 
     # Poles et zeros de la fonction de transfert inverse
-    zplane(a, b)
+    # plt.figure()
+    # zplane(a, b)
     # La fonction de transfert inverse est stable car tous les POLES sont a l'interieur du cercle, donc
     # possede un module < 1
 
@@ -80,10 +82,6 @@ def rotationImage(img, type="npy"):
             imageFiltree[nx][ny] = img[x][y]
 
     plt.figure()
-    plt.title("Image de coté")
-    plt.imshow(img)
-
-    plt.figure()
     plt.title("Image après matrice de rotation")
     plt.imshow(imageFiltree)
 
@@ -104,14 +102,16 @@ def filtrageBruit(img, methode, type):
     if methode == 1:
 
         # fonction de transfert :
-        b = np.poly([-1, -1])  # Zeros
-        a = np.poly([-0.519634, 0.224966])  # Poles
+        b = np.poly([-0.9, -0.9])  # Zeros
+        a = np.poly([-0.2316-0.3957j, -0.2316+0.3957j])  # Poles
+
+        # coeffa = [1, 2, 1]
+        # coeffb = [2.39, 1.1072, 0.5024]
+        # root = np.roots(coeffa)
 
         # Poles et zeros
+        # plt.figure()
         # zplane(b, a)
-
-        # Poles et zeros de la fonction de transfert inverse
-        # zplane(a, b)
         # La fonction de transfert inverse est stable car tous les POLES sont a l'interieur du cercle, donc
         # possede un module < 1
 
@@ -151,6 +151,7 @@ def filtrageBruit(img, methode, type):
             b, a = signal.ellip(N, 1, 60, Wn, output='ba', fs=fe)
 
         # Poles et zeroes
+        # plt.figure()
         # zplane(b, a)
 
         print("Type de filtre choisi : " + type)
@@ -160,10 +161,6 @@ def filtrageBruit(img, methode, type):
             imageFiltree[i] = signal.lfilter(b, a, img[i])
 
     matplotlib.pyplot.gray()
-
-    plt.figure()
-    plt.title("Image bruitee originale")
-    plt.imshow(img)
 
     plt.figure()
     plt.title("Image filtree par le filtre passe-bas RII choisi")
@@ -216,7 +213,7 @@ if __name__ == '__main__':
 
         # # Elimination du bruit en haute frequence
         # # choix du type de filtre = Butterworth/Cheby1/Cheby2/Elliptique
-        imageFinale = filtrageBruit(imgTournee, 2, type="Elliptique")
+        imageFinale = filtrageBruit(imgTournee, 1, type="Elliptique")
 
     else:
         # Filtrage des aberrations en appliquant un filtre numérique
