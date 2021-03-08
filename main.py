@@ -1,3 +1,9 @@
+# #################################################################
+# Auteurs : Sébastien Pomerleau et Gabriel Roy                    #
+# S5 APP 4 Informatique : Conception d'un filtre et compression   #
+# Date : 9 mars 2021                                              #
+# #################################################################
+
 import math
 import matplotlib
 import matplotlib.image as mpimg
@@ -5,7 +11,7 @@ import matplotlib.pyplot as plt
 import numpy
 import numpy as np
 from scipy import signal
-import zplane
+from Libraries.zplane import zplane
 import scipy.linalg as la
 import statistics
 
@@ -28,7 +34,7 @@ def filtrageAberrations(img):
     # zplane(b, a)
 
     # Poles et zeros de la fonction de transfert inverse
-    # zplane(a, b)
+    zplane(a, b)
     # La fonction de transfert inverse est stable car tous les POLES sont a l'interieur du cercle, donc
     # possede un module < 1
 
@@ -167,18 +173,14 @@ def filtrageBruit(img, methode, type):
 
 
 def compressionImage(img, compressValue):
-    # *** Principle Component Analysis (PCA), determiner une base orthogonale ou le premier element permet d'extraire le max d'informations,
-    # le 2ieme un peu moins et ainsi de suite. On pourra laisser tomber les elements de la base qui contiennent le moins d'info
-
-    matCov = np.cov(img)  # matrice covariance image original
-
+    matCov = np.cov(img)  # matrice covariance de l'image original
     eigvals, eigvecs = la.eig(matCov)  # valeur propres et vecteurs propres de la matrice covariance
 
-    img_Vec = np.matmul(img,
-                        eigvecs)  # image de base vecteur propres, obtenu par la multiplication des vecteurs propres et de l'image de base original
+    img_Vec = np.matmul(img, eigvecs)  # image de base vecteur propres, obtenu par la multiplication
+                                       # des vecteurs propres et de l'image de base original
     eigvecs_inv = la.inv(eigvecs)  # calcule vecteur propres inverse
 
-    # boucle qui vérifier le modulo 2 pour la compression a 50% qui en résulte d'une élimination d'une ligne sur 2
+    # boucle qui vérifie le modulo 2 pour la compression a 50% qui en résulte d'une élimination d'une ligne sur 2
     for i in range(0, len(img_Vec)):
         rep = i % 2
         if rep == 0:
