@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import numpy
 import numpy as np
 from scipy import signal
-from Libraries.zplane import zplane
+import zplane
 import scipy.linalg as la
 import statistics
 
